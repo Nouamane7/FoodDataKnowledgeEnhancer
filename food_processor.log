@@ -1,0 +1,1644 @@
+2025-08-05 11:13:46,801 - __main__ - INFO - 🟢 Food Processor starting...
+2025-08-05 11:13:46,802 - __main__ - INFO - PostgreSQL: localhost:5434
+2025-08-05 11:13:46,802 - __main__ - INFO - MongoDB: mongodb://mongoadmin:mongopass@localhost:27018/lunchbox_db?authSource=admin
+2025-08-05 11:13:46,802 - __main__ - INFO - Using models: llama3:latest (primary), mistral:7b (validator)
+2025-08-05 11:13:48,885 - httpx - INFO - HTTP Request: GET http://localhost:11434/api/tags "HTTP/1.1 200 OK"
+2025-08-05 11:13:48,886 - __main__ - INFO - ✓ Ollama models available
+2025-08-05 11:13:48,886 - processor.food_processor - INFO - Starting batch processing with size 10
+2025-08-05 11:13:48,974 - database.postgres_client - INFO - Connected to PostgreSQL database
+2025-08-05 11:13:48,982 - database.mongo_client - INFO - Connected to MongoDB database
+2025-08-05 11:13:49,028 - database.postgres_client - INFO - Retrieved 10 ingredient from database
+2025-08-05 11:13:49,028 - processor.food_processor - INFO - Retrieved 10 ingredients for processing
+2025-08-05 11:13:49,066 - llm.ollama_client - INFO - 
+==================================================
+llama3:latest - Input:
+
+You are a food knowledge assistant. Your task is to transform an Ingredient into a detailed Product JSON object for a food database.
+
+Each ingredient has:
+- id: unique numeric ID
+- name: the main name of the ingredient (e.g., "Cheddar Cheese")
+- category: the type of ingredient (e.g., "Dairy", "Vegetables")
+
+From this, create a Product JSON with the following fields:
+
+- ingredientId: copy the id from the ingredient
+- brand: set to "unbranded"
+- description: leave as ""
+- unit: choose the most realistic unit for the ingredient.
+  Common units include "kg", "g", "l", "ml" — but use any other appropriate unit that matches the ingredient's natural form or packaging.
+- nutritions: include accurate nutrition facts per 1 unit chosen above.
+  Provide as many as relevant (e.g., "energy", "protein", "fat", "sugar", "carbohydrates", "fiber", "salt", "calcium", etc.).
+  Each nutrition is an object with value and unit.
+- allergens: realistic list based on the ingredient’s name and category
+- userGenerated: always false
+
+Only return valid JSON. Do not include any explanation or extra text.
+
+Example:
+
+Ingredient Input:
+{
+  "id": 101,
+  "name": "Cheddar Cheese",
+  "category": "Dairy"
+}
+
+Expected Product Output:
+{
+  "ingredientId": 101,
+  "brand": "unbranded",
+  "description": "",
+  "unit": "g",
+  "nutritions": {
+    "energy": {
+      "value": 402,
+      "unit": "kcal"
+    },
+    "protein": {
+      "value": 25,
+      "unit": "g"
+    },
+    "fat": {
+      "value": 33,
+      "unit": "g"
+    },
+    "saturated_fat": {
+      "value": 21,
+      "unit": "g"
+    },
+    "carbohydrates": {
+      "value": 1.3,
+      "unit": "g"
+    },
+    "sugar": {
+      "value": 0.5,
+      "unit": "g"
+    },
+    "salt": {
+      "value": 1.8,
+      "unit": "g"
+    },
+    "calcium": {
+      "value": 721,
+      "unit": "mg"
+    }
+  },
+  "allergens": ["lactose"],
+  "userGenerated": false
+}
+.
+
+
+Ingredient: id=1, name='Sushi Rice', category='Grains & Pulses'
+==================================================
+2025-08-05 11:14:07,623 - httpx - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2025-08-05 11:14:07,623 - llm.ollama_client - INFO - 
+==================================================
+llama3:latest - Output:
+{
+  "ingredientId": 1,
+  "brand": "unbranded",
+  "description": "",
+  "unit": "g",
+  "nutritions": {
+    "energy": {
+      "value": 1230,
+      "unit": "kcal"
+    },
+    "protein": {
+      "value": 6.5,
+      "unit": "g"
+    },
+    "fat": {
+      "value": 1.2,
+      "unit": "g"
+    },
+    "carbohydrates": {
+      "value": 275,
+      "unit": "g"
+    },
+    "sugar": {
+      "value": 0.5,
+      "unit": "g"
+    },
+    "fiber": {
+      "value": 2.3,
+      "unit": "g"
+    },
+    "salt": {
+      "value": 0.1,
+      "unit": "g"
+    }
+  },
+  "allergens": ["gluten"],
+  "userGenerated": false
+}
+==================================================
+2025-08-05 11:14:07,625 - llm.ollama_client - INFO - Successfully transformed ingredient 1 to product
+2025-08-05 11:14:07,628 - llm.ollama_client - INFO - 
+==================================================
+mistral:7b - Input:
+
+You are a food data validator reviewing a Product JSON created from an ingredient.
+
+Output ONLY valid JSON with these fields exactly:
+- ingredientId: integer
+- brand: string
+- description: string
+- unit: string
+- nutritions: object with nutrition values { "value": number, "unit": string }
+- allergens: list of strings
+- userGenerated: boolean
+
+Do NOT include any explanations or extra text before or after.
+
+Example input ingredient:
+{
+  "id": 101,
+  "name": "Cheddar Cheese",
+  "category": "Dairy"
+}
+
+Example input product JSON:
+{
+  "ingredientId": 101,
+  "brand": "unbranded",
+  "description": "",
+  "unit": "g",
+  "nutritions": {
+    "energy": {"value": 402, "unit": "kcal"},
+    "protein": {"value": 25, "unit": "g"},
+    "fat": {"value": 33, "unit": "g"},
+    "saturated_fat": {"value": 21, "unit": "g"},
+    "carbohydrates": {"value": 1.3, "unit": "g"},
+    "sugar": {"value": 0.5, "unit": "g"},
+    "salt": {"value": 1.8, "unit": "g"},
+    "calcium": {"value": 721, "unit": "mg"}
+  },
+  "allergens": ["lactose"],
+  "userGenerated": false
+}
+
+Output the validated/corrected product JSON ONLY.
+Original ingredient:
+{
+  "id": 1,
+  "name": "Sushi Rice",
+  "category": "Grains & Pulses"
+}
+Product JSON to validate:
+{
+  "ingredientId": 1,
+  "brand": "unbranded",
+  "description": "",
+  "unit": "g",
+  "nutritions": {
+    "energy": {
+      "value": 1230.0,
+      "unit": "kcal"
+    },
+    "protein": {
+      "value": 6.5,
+      "unit": "g"
+    },
+    "fat": {
+      "value": 1.2,
+      "unit": "g"
+    },
+    "carbohydrates": {
+      "value": 275.0,
+      "unit": "g"
+    },
+    "sugar": {
+      "value": 0.5,
+      "unit": "g"
+    },
+    "fiber": {
+      "value": 2.3,
+      "unit": "g"
+    },
+    "salt": {
+      "value": 0.1,
+      "unit": "g"
+    }
+  },
+  "allergens": [
+    "gluten"
+  ],
+  "userGenerated": false
+}
+Output ONLY the corrected or validated Product JSON with no explanation or extra text.
+==================================================
+2025-08-05 11:14:19,815 - httpx - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2025-08-05 11:14:19,815 - llm.ollama_client - INFO - 
+==================================================
+mistral:7b - Output:
+{
+  "ingredientId": 1,
+  "brand": "unbranded",
+  "description": "",
+  "unit": "g",
+  "nutritions": {
+    "energy": {"value": 1230, "unit": "kcal"},
+    "protein": {"value": 6.5, "unit": "g"},
+    "fat": {"value": 1.2, "unit": "g"},
+    "carbohydrates": {"value": 275, "unit": "g"},
+    "sugar": {"value": 0.5, "unit": "g"},
+    "fiber": {"value": 2.3, "unit": "g"},
+    "salt": {"value": 0.1, "unit": "g"}
+  },
+  "allergens": ["gluten"],
+  "userGenerated": false
+}
+==================================================
+2025-08-05 11:14:19,816 - llm.ollama_client - INFO - LLM2 validated product for ingredient 1 - no changes needed
+2025-08-05 11:14:19,816 - processor.food_processor - INFO - Product data converged after 1 iterations for ingredient 1
+2025-08-05 11:14:19,817 - processor.food_processor - ERROR - Error processing ingredient 1: models.Product() argument after ** must be a mapping, not Product
+2025-08-05 11:14:19,820 - llm.ollama_client - INFO - 
+==================================================
+llama3:latest - Input:
+
+You are a food knowledge assistant. Your task is to transform an Ingredient into a detailed Product JSON object for a food database.
+
+Each ingredient has:
+- id: unique numeric ID
+- name: the main name of the ingredient (e.g., "Cheddar Cheese")
+- category: the type of ingredient (e.g., "Dairy", "Vegetables")
+
+From this, create a Product JSON with the following fields:
+
+- ingredientId: copy the id from the ingredient
+- brand: set to "unbranded"
+- description: leave as ""
+- unit: choose the most realistic unit for the ingredient.
+  Common units include "kg", "g", "l", "ml" — but use any other appropriate unit that matches the ingredient's natural form or packaging.
+- nutritions: include accurate nutrition facts per 1 unit chosen above.
+  Provide as many as relevant (e.g., "energy", "protein", "fat", "sugar", "carbohydrates", "fiber", "salt", "calcium", etc.).
+  Each nutrition is an object with value and unit.
+- allergens: realistic list based on the ingredient’s name and category
+- userGenerated: always false
+
+Only return valid JSON. Do not include any explanation or extra text.
+
+Example:
+
+Ingredient Input:
+{
+  "id": 101,
+  "name": "Cheddar Cheese",
+  "category": "Dairy"
+}
+
+Expected Product Output:
+{
+  "ingredientId": 101,
+  "brand": "unbranded",
+  "description": "",
+  "unit": "g",
+  "nutritions": {
+    "energy": {
+      "value": 402,
+      "unit": "kcal"
+    },
+    "protein": {
+      "value": 25,
+      "unit": "g"
+    },
+    "fat": {
+      "value": 33,
+      "unit": "g"
+    },
+    "saturated_fat": {
+      "value": 21,
+      "unit": "g"
+    },
+    "carbohydrates": {
+      "value": 1.3,
+      "unit": "g"
+    },
+    "sugar": {
+      "value": 0.5,
+      "unit": "g"
+    },
+    "salt": {
+      "value": 1.8,
+      "unit": "g"
+    },
+    "calcium": {
+      "value": 721,
+      "unit": "mg"
+    }
+  },
+  "allergens": ["lactose"],
+  "userGenerated": false
+}
+.
+
+
+Ingredient: id=2, name='Arabica Coffee', category='Beverages'
+==================================================
+2025-08-05 11:14:30,697 - httpx - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2025-08-05 11:14:30,698 - llm.ollama_client - INFO - 
+==================================================
+llama3:latest - Output:
+{
+  "ingredientId": 2,
+  "brand": "unbranded",
+  "description": "",
+  "unit": "g",
+  "nutritions": {
+    "energy": {
+      "value": 0.5,
+      "unit": "kcal"
+    },
+    "caffeine": {
+      "value": 40,
+      "unit": "mg"
+    }
+  },
+  "allergens": ["coffee"],
+  "userGenerated": false
+}
+==================================================
+2025-08-05 11:14:30,698 - llm.ollama_client - INFO - Successfully transformed ingredient 2 to product
+2025-08-05 11:14:30,699 - llm.ollama_client - INFO - 
+==================================================
+mistral:7b - Input:
+
+You are a food data validator reviewing a Product JSON created from an ingredient.
+
+Output ONLY valid JSON with these fields exactly:
+- ingredientId: integer
+- brand: string
+- description: string
+- unit: string
+- nutritions: object with nutrition values { "value": number, "unit": string }
+- allergens: list of strings
+- userGenerated: boolean
+
+Do NOT include any explanations or extra text before or after.
+
+Example input ingredient:
+{
+  "id": 101,
+  "name": "Cheddar Cheese",
+  "category": "Dairy"
+}
+
+Example input product JSON:
+{
+  "ingredientId": 101,
+  "brand": "unbranded",
+  "description": "",
+  "unit": "g",
+  "nutritions": {
+    "energy": {"value": 402, "unit": "kcal"},
+    "protein": {"value": 25, "unit": "g"},
+    "fat": {"value": 33, "unit": "g"},
+    "saturated_fat": {"value": 21, "unit": "g"},
+    "carbohydrates": {"value": 1.3, "unit": "g"},
+    "sugar": {"value": 0.5, "unit": "g"},
+    "salt": {"value": 1.8, "unit": "g"},
+    "calcium": {"value": 721, "unit": "mg"}
+  },
+  "allergens": ["lactose"],
+  "userGenerated": false
+}
+
+Output the validated/corrected product JSON ONLY.
+Original ingredient:
+{
+  "id": 2,
+  "name": "Arabica Coffee",
+  "category": "Beverages"
+}
+Product JSON to validate:
+{
+  "ingredientId": 2,
+  "brand": "unbranded",
+  "description": "",
+  "unit": "g",
+  "nutritions": {
+    "energy": {
+      "value": 0.5,
+      "unit": "kcal"
+    },
+    "caffeine": {
+      "value": 40.0,
+      "unit": "mg"
+    }
+  },
+  "allergens": [
+    "coffee"
+  ],
+  "userGenerated": false
+}
+Output ONLY the corrected or validated Product JSON with no explanation or extra text.
+==================================================
+2025-08-05 11:14:39,452 - httpx - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2025-08-05 11:14:39,454 - llm.ollama_client - INFO - 
+==================================================
+mistral:7b - Output:
+{
+  "ingredientId": 2,
+  "brand": "unbranded",
+  "description": "",
+  "unit": "g",
+  "nutritions": {
+    "energy": {"value": 0.5, "unit": "kcal"},
+    "caffeine": {"value": 40.0, "unit": "mg"}
+  },
+  "allergens": ["coffee"],
+  "userGenerated": false
+}
+==================================================
+2025-08-05 11:14:39,454 - llm.ollama_client - INFO - LLM2 validated product for ingredient 2 - no changes needed
+2025-08-05 11:14:39,454 - processor.food_processor - INFO - Product data converged after 1 iterations for ingredient 2
+2025-08-05 11:14:39,454 - processor.food_processor - ERROR - Error processing ingredient 2: models.Product() argument after ** must be a mapping, not Product
+2025-08-05 11:14:39,458 - llm.ollama_client - INFO - 
+==================================================
+llama3:latest - Input:
+
+You are a food knowledge assistant. Your task is to transform an Ingredient into a detailed Product JSON object for a food database.
+
+Each ingredient has:
+- id: unique numeric ID
+- name: the main name of the ingredient (e.g., "Cheddar Cheese")
+- category: the type of ingredient (e.g., "Dairy", "Vegetables")
+
+From this, create a Product JSON with the following fields:
+
+- ingredientId: copy the id from the ingredient
+- brand: set to "unbranded"
+- description: leave as ""
+- unit: choose the most realistic unit for the ingredient.
+  Common units include "kg", "g", "l", "ml" — but use any other appropriate unit that matches the ingredient's natural form or packaging.
+- nutritions: include accurate nutrition facts per 1 unit chosen above.
+  Provide as many as relevant (e.g., "energy", "protein", "fat", "sugar", "carbohydrates", "fiber", "salt", "calcium", etc.).
+  Each nutrition is an object with value and unit.
+- allergens: realistic list based on the ingredient’s name and category
+- userGenerated: always false
+
+Only return valid JSON. Do not include any explanation or extra text.
+
+Example:
+
+Ingredient Input:
+{
+  "id": 101,
+  "name": "Cheddar Cheese",
+  "category": "Dairy"
+}
+
+Expected Product Output:
+{
+  "ingredientId": 101,
+  "brand": "unbranded",
+  "description": "",
+  "unit": "g",
+  "nutritions": {
+    "energy": {
+      "value": 402,
+      "unit": "kcal"
+    },
+    "protein": {
+      "value": 25,
+      "unit": "g"
+    },
+    "fat": {
+      "value": 33,
+      "unit": "g"
+    },
+    "saturated_fat": {
+      "value": 21,
+      "unit": "g"
+    },
+    "carbohydrates": {
+      "value": 1.3,
+      "unit": "g"
+    },
+    "sugar": {
+      "value": 0.5,
+      "unit": "g"
+    },
+    "salt": {
+      "value": 1.8,
+      "unit": "g"
+    },
+    "calcium": {
+      "value": 721,
+      "unit": "mg"
+    }
+  },
+  "allergens": ["lactose"],
+  "userGenerated": false
+}
+.
+
+
+Ingredient: id=3, name='Black Rice', category='Grains & Pulses'
+==================================================
+2025-08-05 11:14:51,839 - httpx - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2025-08-05 11:14:51,840 - llm.ollama_client - INFO - 
+==================================================
+llama3:latest - Output:
+{
+  "ingredientId": 3,
+  "brand": "unbranded",
+  "description": "",
+  "unit": "g",
+  "nutritions": {
+    "energy": {
+      "value": 1300,
+      "unit": "kcal"
+    },
+    "protein": {
+      "value": 7.5,
+      "unit": "g"
+    },
+    "fat": {
+      "value": 2.5,
+      "unit": "g"
+    },
+    "carbohydrates": {
+      "value": 285,
+      "unit": "g"
+    },
+    "sugar": {
+      "value": 0.1,
+      "unit": "g"
+    },
+    "fiber": {
+      "value": 3.5,
+      "unit": "g"
+    },
+    "salt": {
+      "value": 0.2,
+      "unit": "g"
+    }
+  },
+  "allergens": ["gluten"],
+  "userGenerated": false
+}
+==================================================
+2025-08-05 11:14:51,841 - llm.ollama_client - INFO - Successfully transformed ingredient 3 to product
+2025-08-05 11:14:51,841 - llm.ollama_client - INFO - 
+==================================================
+mistral:7b - Input:
+
+You are a food data validator reviewing a Product JSON created from an ingredient.
+
+Output ONLY valid JSON with these fields exactly:
+- ingredientId: integer
+- brand: string
+- description: string
+- unit: string
+- nutritions: object with nutrition values { "value": number, "unit": string }
+- allergens: list of strings
+- userGenerated: boolean
+
+Do NOT include any explanations or extra text before or after.
+
+Example input ingredient:
+{
+  "id": 101,
+  "name": "Cheddar Cheese",
+  "category": "Dairy"
+}
+
+Example input product JSON:
+{
+  "ingredientId": 101,
+  "brand": "unbranded",
+  "description": "",
+  "unit": "g",
+  "nutritions": {
+    "energy": {"value": 402, "unit": "kcal"},
+    "protein": {"value": 25, "unit": "g"},
+    "fat": {"value": 33, "unit": "g"},
+    "saturated_fat": {"value": 21, "unit": "g"},
+    "carbohydrates": {"value": 1.3, "unit": "g"},
+    "sugar": {"value": 0.5, "unit": "g"},
+    "salt": {"value": 1.8, "unit": "g"},
+    "calcium": {"value": 721, "unit": "mg"}
+  },
+  "allergens": ["lactose"],
+  "userGenerated": false
+}
+
+Output the validated/corrected product JSON ONLY.
+Original ingredient:
+{
+  "id": 3,
+  "name": "Black Rice",
+  "category": "Grains & Pulses"
+}
+Product JSON to validate:
+{
+  "ingredientId": 3,
+  "brand": "unbranded",
+  "description": "",
+  "unit": "g",
+  "nutritions": {
+    "energy": {
+      "value": 1300.0,
+      "unit": "kcal"
+    },
+    "protein": {
+      "value": 7.5,
+      "unit": "g"
+    },
+    "fat": {
+      "value": 2.5,
+      "unit": "g"
+    },
+    "carbohydrates": {
+      "value": 285.0,
+      "unit": "g"
+    },
+    "sugar": {
+      "value": 0.1,
+      "unit": "g"
+    },
+    "fiber": {
+      "value": 3.5,
+      "unit": "g"
+    },
+    "salt": {
+      "value": 0.2,
+      "unit": "g"
+    }
+  },
+  "allergens": [
+    "gluten"
+  ],
+  "userGenerated": false
+}
+Output ONLY the corrected or validated Product JSON with no explanation or extra text.
+==================================================
+2025-08-05 11:15:02,976 - httpx - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2025-08-05 11:15:02,976 - llm.ollama_client - INFO - 
+==================================================
+mistral:7b - Output:
+{
+  "ingredientId": 3,
+  "brand": "unbranded",
+  "description": "",
+  "unit": "g",
+  "nutritions": {
+    "energy": {"value": 1300, "unit": "kcal"},
+    "protein": {"value": 7.5, "unit": "g"},
+    "fat": {"value": 2.5, "unit": "g"},
+    "carbohydrates": {"value": 285, "unit": "g"},
+    "sugar": {"value": 0.1, "unit": "g"},
+    "fiber": {"value": 3.5, "unit": "g"},
+    "salt": {"value": 0.2, "unit": "g"}
+  },
+  "allergens": ["gluten"],
+  "userGenerated": false
+}
+==================================================
+2025-08-05 11:15:02,977 - llm.ollama_client - INFO - LLM2 validated product for ingredient 3 - no changes needed
+2025-08-05 11:15:02,977 - processor.food_processor - INFO - Product data converged after 1 iterations for ingredient 3
+2025-08-05 11:15:02,977 - processor.food_processor - ERROR - Error processing ingredient 3: models.Product() argument after ** must be a mapping, not Product
+2025-08-05 11:15:02,979 - llm.ollama_client - INFO - 
+==================================================
+llama3:latest - Input:
+
+You are a food knowledge assistant. Your task is to transform an Ingredient into a detailed Product JSON object for a food database.
+
+Each ingredient has:
+- id: unique numeric ID
+- name: the main name of the ingredient (e.g., "Cheddar Cheese")
+- category: the type of ingredient (e.g., "Dairy", "Vegetables")
+
+From this, create a Product JSON with the following fields:
+
+- ingredientId: copy the id from the ingredient
+- brand: set to "unbranded"
+- description: leave as ""
+- unit: choose the most realistic unit for the ingredient.
+  Common units include "kg", "g", "l", "ml" — but use any other appropriate unit that matches the ingredient's natural form or packaging.
+- nutritions: include accurate nutrition facts per 1 unit chosen above.
+  Provide as many as relevant (e.g., "energy", "protein", "fat", "sugar", "carbohydrates", "fiber", "salt", "calcium", etc.).
+  Each nutrition is an object with value and unit.
+- allergens: realistic list based on the ingredient’s name and category
+- userGenerated: always false
+
+Only return valid JSON. Do not include any explanation or extra text.
+
+Example:
+
+Ingredient Input:
+{
+  "id": 101,
+  "name": "Cheddar Cheese",
+  "category": "Dairy"
+}
+
+Expected Product Output:
+{
+  "ingredientId": 101,
+  "brand": "unbranded",
+  "description": "",
+  "unit": "g",
+  "nutritions": {
+    "energy": {
+      "value": 402,
+      "unit": "kcal"
+    },
+    "protein": {
+      "value": 25,
+      "unit": "g"
+    },
+    "fat": {
+      "value": 33,
+      "unit": "g"
+    },
+    "saturated_fat": {
+      "value": 21,
+      "unit": "g"
+    },
+    "carbohydrates": {
+      "value": 1.3,
+      "unit": "g"
+    },
+    "sugar": {
+      "value": 0.5,
+      "unit": "g"
+    },
+    "salt": {
+      "value": 1.8,
+      "unit": "g"
+    },
+    "calcium": {
+      "value": 721,
+      "unit": "mg"
+    }
+  },
+  "allergens": ["lactose"],
+  "userGenerated": false
+}
+.
+
+
+Ingredient: id=4, name='Long Grain Rice', category='Grains & Pulses'
+==================================================
+2025-08-05 11:15:15,534 - httpx - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2025-08-05 11:15:15,535 - llm.ollama_client - INFO - 
+==================================================
+llama3:latest - Output:
+{
+  "ingredientId": 4,
+  "brand": "unbranded",
+  "description": "",
+  "unit": "g",
+  "nutritions": {
+    "energy": {
+      "value": 352,
+      "unit": "kcal"
+    },
+    "protein": {
+      "value": 6.5,
+      "unit": "g"
+    },
+    "fat": {
+      "value": 0.5,
+      "unit": "g"
+    },
+    "carbohydrates": {
+      "value": 76.2,
+      "unit": "g"
+    },
+    "sugar": {
+      "value": 0.1,
+      "unit": "g"
+    },
+    "salt": {
+      "value": 0.02,
+      "unit": "g"
+    }
+  },
+  "allergens": ["gluten"],
+  "userGenerated": false
+}
+==================================================
+2025-08-05 11:15:15,536 - llm.ollama_client - INFO - Successfully transformed ingredient 4 to product
+2025-08-05 11:15:15,536 - llm.ollama_client - INFO - 
+==================================================
+mistral:7b - Input:
+
+You are a food data validator reviewing a Product JSON created from an ingredient.
+
+Output ONLY valid JSON with these fields exactly:
+- ingredientId: integer
+- brand: string
+- description: string
+- unit: string
+- nutritions: object with nutrition values { "value": number, "unit": string }
+- allergens: list of strings
+- userGenerated: boolean
+
+Do NOT include any explanations or extra text before or after.
+
+Example input ingredient:
+{
+  "id": 101,
+  "name": "Cheddar Cheese",
+  "category": "Dairy"
+}
+
+Example input product JSON:
+{
+  "ingredientId": 101,
+  "brand": "unbranded",
+  "description": "",
+  "unit": "g",
+  "nutritions": {
+    "energy": {"value": 402, "unit": "kcal"},
+    "protein": {"value": 25, "unit": "g"},
+    "fat": {"value": 33, "unit": "g"},
+    "saturated_fat": {"value": 21, "unit": "g"},
+    "carbohydrates": {"value": 1.3, "unit": "g"},
+    "sugar": {"value": 0.5, "unit": "g"},
+    "salt": {"value": 1.8, "unit": "g"},
+    "calcium": {"value": 721, "unit": "mg"}
+  },
+  "allergens": ["lactose"],
+  "userGenerated": false
+}
+
+Output the validated/corrected product JSON ONLY.
+Original ingredient:
+{
+  "id": 4,
+  "name": "Long Grain Rice",
+  "category": "Grains & Pulses"
+}
+Product JSON to validate:
+{
+  "ingredientId": 4,
+  "brand": "unbranded",
+  "description": "",
+  "unit": "g",
+  "nutritions": {
+    "energy": {
+      "value": 352.0,
+      "unit": "kcal"
+    },
+    "protein": {
+      "value": 6.5,
+      "unit": "g"
+    },
+    "fat": {
+      "value": 0.5,
+      "unit": "g"
+    },
+    "carbohydrates": {
+      "value": 76.2,
+      "unit": "g"
+    },
+    "sugar": {
+      "value": 0.1,
+      "unit": "g"
+    },
+    "salt": {
+      "value": 0.02,
+      "unit": "g"
+    }
+  },
+  "allergens": [
+    "gluten"
+  ],
+  "userGenerated": false
+}
+Output ONLY the corrected or validated Product JSON with no explanation or extra text.
+==================================================
+2025-08-05 11:15:29,486 - httpx - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2025-08-05 11:15:29,487 - llm.ollama_client - INFO - 
+==================================================
+mistral:7b - Output:
+{
+  "ingredientId": 4,
+  "brand": "unbranded",
+  "description": "",
+  "unit": "g",
+  "nutritions": {
+    "energy": {"value": 352.0, "unit": "kcal"},
+    "protein": {"value": 6.5, "unit": "g"},
+    "fat": {"value": 0.5, "unit": "g"},
+    "carbohydrates": {"value": 76.2, "unit": "g"},
+    "sugar": {"value": 0.1, "unit": "g"},
+    "salt": {"value": 0.02, "unit": "g"},
+    "fiber": {"value": null, "unit": null},
+    "iron": {"value": null, "unit": null}
+  },
+  "allergens": ["gluten"],
+  "userGenerated": false
+}
+==================================================
+2025-08-05 11:15:29,495 - llm.ollama_client - ERROR - Error validating product for ingredient 4: 4 validation errors for Product
+nutritions.fiber.value
+  Input should be a valid number [type=float_type, input_value=None, input_type=NoneType]
+    For further information visit https://errors.pydantic.dev/2.4/v/float_type
+nutritions.fiber.unit
+  Input should be a valid string [type=string_type, input_value=None, input_type=NoneType]
+    For further information visit https://errors.pydantic.dev/2.4/v/string_type
+nutritions.iron.value
+  Input should be a valid number [type=float_type, input_value=None, input_type=NoneType]
+    For further information visit https://errors.pydantic.dev/2.4/v/float_type
+nutritions.iron.unit
+  Input should be a valid string [type=string_type, input_value=None, input_type=NoneType]
+    For further information visit https://errors.pydantic.dev/2.4/v/string_type
+2025-08-05 11:15:29,495 - processor.food_processor - INFO - Product data converged after 1 iterations for ingredient 4
+2025-08-05 11:15:29,495 - processor.food_processor - ERROR - Error processing ingredient 4: models.Product() argument after ** must be a mapping, not Product
+2025-08-05 11:15:29,499 - llm.ollama_client - INFO - 
+==================================================
+llama3:latest - Input:
+
+You are a food knowledge assistant. Your task is to transform an Ingredient into a detailed Product JSON object for a food database.
+
+Each ingredient has:
+- id: unique numeric ID
+- name: the main name of the ingredient (e.g., "Cheddar Cheese")
+- category: the type of ingredient (e.g., "Dairy", "Vegetables")
+
+From this, create a Product JSON with the following fields:
+
+- ingredientId: copy the id from the ingredient
+- brand: set to "unbranded"
+- description: leave as ""
+- unit: choose the most realistic unit for the ingredient.
+  Common units include "kg", "g", "l", "ml" — but use any other appropriate unit that matches the ingredient's natural form or packaging.
+- nutritions: include accurate nutrition facts per 1 unit chosen above.
+  Provide as many as relevant (e.g., "energy", "protein", "fat", "sugar", "carbohydrates", "fiber", "salt", "calcium", etc.).
+  Each nutrition is an object with value and unit.
+- allergens: realistic list based on the ingredient’s name and category
+- userGenerated: always false
+
+Only return valid JSON. Do not include any explanation or extra text.
+
+Example:
+
+Ingredient Input:
+{
+  "id": 101,
+  "name": "Cheddar Cheese",
+  "category": "Dairy"
+}
+
+Expected Product Output:
+{
+  "ingredientId": 101,
+  "brand": "unbranded",
+  "description": "",
+  "unit": "g",
+  "nutritions": {
+    "energy": {
+      "value": 402,
+      "unit": "kcal"
+    },
+    "protein": {
+      "value": 25,
+      "unit": "g"
+    },
+    "fat": {
+      "value": 33,
+      "unit": "g"
+    },
+    "saturated_fat": {
+      "value": 21,
+      "unit": "g"
+    },
+    "carbohydrates": {
+      "value": 1.3,
+      "unit": "g"
+    },
+    "sugar": {
+      "value": 0.5,
+      "unit": "g"
+    },
+    "salt": {
+      "value": 1.8,
+      "unit": "g"
+    },
+    "calcium": {
+      "value": 721,
+      "unit": "mg"
+    }
+  },
+  "allergens": ["lactose"],
+  "userGenerated": false
+}
+.
+
+
+Ingredient: id=5, name='Plum', category='Fruits & Vegetables'
+==================================================
+2025-08-05 11:15:42,473 - httpx - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2025-08-05 11:15:42,475 - llm.ollama_client - INFO - 
+==================================================
+llama3:latest - Output:
+{
+  "ingredientId": 5,
+  "brand": "unbranded",
+  "description": "",
+  "unit": "g",
+  "nutritions": {
+    "energy": {
+      "value": 49,
+      "unit": "kcal"
+    },
+    "carbohydrates": {
+      "value": 11.5,
+      "unit": "g"
+    },
+    "sugar": {
+      "value": 9.8,
+      "unit": "g"
+    },
+    "fiber": {
+      "value": 2.3,
+      "unit": "g"
+    },
+    "vitaminC": {
+      "value": 10.5,
+      "unit": "mg"
+    }
+  },
+  "allergens": ["tree nuts"],
+  "userGenerated": false
+}
+==================================================
+2025-08-05 11:15:42,476 - llm.ollama_client - INFO - Successfully transformed ingredient 5 to product
+2025-08-05 11:15:42,476 - llm.ollama_client - INFO - 
+==================================================
+mistral:7b - Input:
+
+You are a food data validator reviewing a Product JSON created from an ingredient.
+
+Output ONLY valid JSON with these fields exactly:
+- ingredientId: integer
+- brand: string
+- description: string
+- unit: string
+- nutritions: object with nutrition values { "value": number, "unit": string }
+- allergens: list of strings
+- userGenerated: boolean
+
+Do NOT include any explanations or extra text before or after.
+
+Example input ingredient:
+{
+  "id": 101,
+  "name": "Cheddar Cheese",
+  "category": "Dairy"
+}
+
+Example input product JSON:
+{
+  "ingredientId": 101,
+  "brand": "unbranded",
+  "description": "",
+  "unit": "g",
+  "nutritions": {
+    "energy": {"value": 402, "unit": "kcal"},
+    "protein": {"value": 25, "unit": "g"},
+    "fat": {"value": 33, "unit": "g"},
+    "saturated_fat": {"value": 21, "unit": "g"},
+    "carbohydrates": {"value": 1.3, "unit": "g"},
+    "sugar": {"value": 0.5, "unit": "g"},
+    "salt": {"value": 1.8, "unit": "g"},
+    "calcium": {"value": 721, "unit": "mg"}
+  },
+  "allergens": ["lactose"],
+  "userGenerated": false
+}
+
+Output the validated/corrected product JSON ONLY.
+Original ingredient:
+{
+  "id": 5,
+  "name": "Plum",
+  "category": "Fruits & Vegetables"
+}
+Product JSON to validate:
+{
+  "ingredientId": 5,
+  "brand": "unbranded",
+  "description": "",
+  "unit": "g",
+  "nutritions": {
+    "energy": {
+      "value": 49.0,
+      "unit": "kcal"
+    },
+    "carbohydrates": {
+      "value": 11.5,
+      "unit": "g"
+    },
+    "sugar": {
+      "value": 9.8,
+      "unit": "g"
+    },
+    "fiber": {
+      "value": 2.3,
+      "unit": "g"
+    },
+    "vitaminC": {
+      "value": 10.5,
+      "unit": "mg"
+    }
+  },
+  "allergens": [
+    "tree nuts"
+  ],
+  "userGenerated": false
+}
+Output ONLY the corrected or validated Product JSON with no explanation or extra text.
+==================================================
+2025-08-05 11:15:53,718 - httpx - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2025-08-05 11:15:53,719 - llm.ollama_client - INFO - 
+==================================================
+mistral:7b - Output:
+{
+  "ingredientId": 5,
+  "brand": "unbranded",
+  "description": "",
+  "unit": "g",
+  "nutritions": {
+    "energy": {"value": 49, "unit": "kcal"},
+    "carbohydrates": {"value": 11.5, "unit": "g"},
+    "sugar": {"value": 9.8, "unit": "g"},
+    "fiber": {"value": 2.3, "unit": "g"},
+    "vitaminC": {"value": 10.5, "unit": "mg"}
+  },
+  "allergens": ["tree nuts"],
+  "userGenerated": false
+}
+==================================================
+2025-08-05 11:15:53,720 - llm.ollama_client - INFO - LLM2 validated product for ingredient 5 - no changes needed
+2025-08-05 11:15:53,720 - processor.food_processor - INFO - Product data converged after 1 iterations for ingredient 5
+2025-08-05 11:15:53,720 - processor.food_processor - ERROR - Error processing ingredient 5: models.Product() argument after ** must be a mapping, not Product
+2025-08-05 11:15:53,722 - llm.ollama_client - INFO - 
+==================================================
+llama3:latest - Input:
+
+You are a food knowledge assistant. Your task is to transform an Ingredient into a detailed Product JSON object for a food database.
+
+Each ingredient has:
+- id: unique numeric ID
+- name: the main name of the ingredient (e.g., "Cheddar Cheese")
+- category: the type of ingredient (e.g., "Dairy", "Vegetables")
+
+From this, create a Product JSON with the following fields:
+
+- ingredientId: copy the id from the ingredient
+- brand: set to "unbranded"
+- description: leave as ""
+- unit: choose the most realistic unit for the ingredient.
+  Common units include "kg", "g", "l", "ml" — but use any other appropriate unit that matches the ingredient's natural form or packaging.
+- nutritions: include accurate nutrition facts per 1 unit chosen above.
+  Provide as many as relevant (e.g., "energy", "protein", "fat", "sugar", "carbohydrates", "fiber", "salt", "calcium", etc.).
+  Each nutrition is an object with value and unit.
+- allergens: realistic list based on the ingredient’s name and category
+- userGenerated: always false
+
+Only return valid JSON. Do not include any explanation or extra text.
+
+Example:
+
+Ingredient Input:
+{
+  "id": 101,
+  "name": "Cheddar Cheese",
+  "category": "Dairy"
+}
+
+Expected Product Output:
+{
+  "ingredientId": 101,
+  "brand": "unbranded",
+  "description": "",
+  "unit": "g",
+  "nutritions": {
+    "energy": {
+      "value": 402,
+      "unit": "kcal"
+    },
+    "protein": {
+      "value": 25,
+      "unit": "g"
+    },
+    "fat": {
+      "value": 33,
+      "unit": "g"
+    },
+    "saturated_fat": {
+      "value": 21,
+      "unit": "g"
+    },
+    "carbohydrates": {
+      "value": 1.3,
+      "unit": "g"
+    },
+    "sugar": {
+      "value": 0.5,
+      "unit": "g"
+    },
+    "salt": {
+      "value": 1.8,
+      "unit": "g"
+    },
+    "calcium": {
+      "value": 721,
+      "unit": "mg"
+    }
+  },
+  "allergens": ["lactose"],
+  "userGenerated": false
+}
+.
+
+
+Ingredient: id=6, name='All-Purpose Flour', category='Grains & Pulses'
+==================================================
+2025-08-05 11:16:06,312 - httpx - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2025-08-05 11:16:06,312 - llm.ollama_client - INFO - 
+==================================================
+llama3:latest - Output:
+{
+  "ingredientId": 6,
+  "brand": "unbranded",
+  "description": "",
+  "unit": "g",
+  "nutritions": {
+    "energy": {
+      "value": 339,
+      "unit": "kcal"
+    },
+    "protein": {
+      "value": 10.4,
+      "unit": "g"
+    },
+    "fat": {
+      "value": 0.9,
+      "unit": "g"
+    },
+    "carbohydrates": {
+      "value": 74.5,
+      "unit": "g"
+    },
+    "sugar": {
+      "value": 0.2,
+      "unit": "g"
+    },
+    "fiber": {
+      "value": 1.8,
+      "unit": "g"
+    },
+    "salt": {
+      "value": 0.02,
+      "unit": "g"
+    }
+  },
+  "allergens": ["wheat"],
+  "userGenerated": false
+}
+==================================================
+2025-08-05 11:16:06,314 - llm.ollama_client - INFO - Successfully transformed ingredient 6 to product
+2025-08-05 11:16:06,315 - llm.ollama_client - INFO - 
+==================================================
+mistral:7b - Input:
+
+You are a food data validator reviewing a Product JSON created from an ingredient.
+
+Output ONLY valid JSON with these fields exactly:
+- ingredientId: integer
+- brand: string
+- description: string
+- unit: string
+- nutritions: object with nutrition values { "value": number, "unit": string }
+- allergens: list of strings
+- userGenerated: boolean
+
+Do NOT include any explanations or extra text before or after.
+
+Example input ingredient:
+{
+  "id": 101,
+  "name": "Cheddar Cheese",
+  "category": "Dairy"
+}
+
+Example input product JSON:
+{
+  "ingredientId": 101,
+  "brand": "unbranded",
+  "description": "",
+  "unit": "g",
+  "nutritions": {
+    "energy": {"value": 402, "unit": "kcal"},
+    "protein": {"value": 25, "unit": "g"},
+    "fat": {"value": 33, "unit": "g"},
+    "saturated_fat": {"value": 21, "unit": "g"},
+    "carbohydrates": {"value": 1.3, "unit": "g"},
+    "sugar": {"value": 0.5, "unit": "g"},
+    "salt": {"value": 1.8, "unit": "g"},
+    "calcium": {"value": 721, "unit": "mg"}
+  },
+  "allergens": ["lactose"],
+  "userGenerated": false
+}
+
+Output the validated/corrected product JSON ONLY.
+Original ingredient:
+{
+  "id": 6,
+  "name": "All-Purpose Flour",
+  "category": "Grains & Pulses"
+}
+Product JSON to validate:
+{
+  "ingredientId": 6,
+  "brand": "unbranded",
+  "description": "",
+  "unit": "g",
+  "nutritions": {
+    "energy": {
+      "value": 339.0,
+      "unit": "kcal"
+    },
+    "protein": {
+      "value": 10.4,
+      "unit": "g"
+    },
+    "fat": {
+      "value": 0.9,
+      "unit": "g"
+    },
+    "carbohydrates": {
+      "value": 74.5,
+      "unit": "g"
+    },
+    "sugar": {
+      "value": 0.2,
+      "unit": "g"
+    },
+    "fiber": {
+      "value": 1.8,
+      "unit": "g"
+    },
+    "salt": {
+      "value": 0.02,
+      "unit": "g"
+    }
+  },
+  "allergens": [
+    "wheat"
+  ],
+  "userGenerated": false
+}
+Output ONLY the corrected or validated Product JSON with no explanation or extra text.
+==================================================
+2025-08-05 11:16:17,905 - httpx - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2025-08-05 11:16:17,906 - llm.ollama_client - INFO - 
+==================================================
+mistral:7b - Output:
+{
+  "ingredientId": 6,
+  "brand": "unbranded",
+  "description": "",
+  "unit": "g",
+  "nutritions": {
+    "energy": {"value": 339, "unit": "kcal"},
+    "protein": {"value": 10.4, "unit": "g"},
+    "fat": {"value": 0.9, "unit": "g"},
+    "carbohydrates": {"value": 74.5, "unit": "g"},
+    "sugar": {"value": 0.2, "unit": "g"},
+    "fiber": {"value": 1.8, "unit": "g"},
+    "salt": {"value": 0.02, "unit": "g"}
+  },
+  "allergens": ["wheat"],
+  "userGenerated": false
+}
+==================================================
+2025-08-05 11:16:17,907 - llm.ollama_client - INFO - LLM2 validated product for ingredient 6 - no changes needed
+2025-08-05 11:16:17,907 - processor.food_processor - INFO - Product data converged after 1 iterations for ingredient 6
+2025-08-05 11:16:17,907 - processor.food_processor - ERROR - Error processing ingredient 6: models.Product() argument after ** must be a mapping, not Product
+2025-08-05 11:16:17,911 - llm.ollama_client - INFO - 
+==================================================
+llama3:latest - Input:
+
+You are a food knowledge assistant. Your task is to transform an Ingredient into a detailed Product JSON object for a food database.
+
+Each ingredient has:
+- id: unique numeric ID
+- name: the main name of the ingredient (e.g., "Cheddar Cheese")
+- category: the type of ingredient (e.g., "Dairy", "Vegetables")
+
+From this, create a Product JSON with the following fields:
+
+- ingredientId: copy the id from the ingredient
+- brand: set to "unbranded"
+- description: leave as ""
+- unit: choose the most realistic unit for the ingredient.
+  Common units include "kg", "g", "l", "ml" — but use any other appropriate unit that matches the ingredient's natural form or packaging.
+- nutritions: include accurate nutrition facts per 1 unit chosen above.
+  Provide as many as relevant (e.g., "energy", "protein", "fat", "sugar", "carbohydrates", "fiber", "salt", "calcium", etc.).
+  Each nutrition is an object with value and unit.
+- allergens: realistic list based on the ingredient’s name and category
+- userGenerated: always false
+
+Only return valid JSON. Do not include any explanation or extra text.
+
+Example:
+
+Ingredient Input:
+{
+  "id": 101,
+  "name": "Cheddar Cheese",
+  "category": "Dairy"
+}
+
+Expected Product Output:
+{
+  "ingredientId": 101,
+  "brand": "unbranded",
+  "description": "",
+  "unit": "g",
+  "nutritions": {
+    "energy": {
+      "value": 402,
+      "unit": "kcal"
+    },
+    "protein": {
+      "value": 25,
+      "unit": "g"
+    },
+    "fat": {
+      "value": 33,
+      "unit": "g"
+    },
+    "saturated_fat": {
+      "value": 21,
+      "unit": "g"
+    },
+    "carbohydrates": {
+      "value": 1.3,
+      "unit": "g"
+    },
+    "sugar": {
+      "value": 0.5,
+      "unit": "g"
+    },
+    "salt": {
+      "value": 1.8,
+      "unit": "g"
+    },
+    "calcium": {
+      "value": 721,
+      "unit": "mg"
+    }
+  },
+  "allergens": ["lactose"],
+  "userGenerated": false
+}
+.
+
+
+Ingredient: id=7, name='Corn Oil', category='Oils & Fats'
+==================================================
+2025-08-05 11:16:30,123 - httpx - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 200 OK"
+2025-08-05 11:16:30,128 - llm.ollama_client - INFO - 
+==================================================
+llama3:latest - Output:
+{
+  "ingredientId": 7,
+  "brand": "unbranded",
+  "description": "",
+  "unit": "ml",
+  "nutritions": {
+    "energy": {
+      "value": 8840,
+      "unit": "kcal"
+    },
+    "fat": {
+      "value": 100,
+      "unit": "g"
+    },
+    "saturated_fat": {
+      "value": 14.5,
+      "unit": "g"
+    },
+    "carbohydrates": {
+      "value": 0,
+      "unit": "g"
+    },
+    "sugar": {
+      "value": 0,
+      "unit": "g"
+    },
+    "salt": {
+      "value": 0.1,
+      "unit": "g"
+    }
+  },
+  "allergens": ["soy"],
+  "userGenerated": false
+}
+==================================================
+2025-08-05 11:16:30,129 - llm.ollama_client - INFO - Successfully transformed ingredient 7 to product
+2025-08-05 11:16:30,129 - llm.ollama_client - INFO - 
+==================================================
+mistral:7b - Input:
+
+You are a food data validator reviewing a Product JSON created from an ingredient.
+
+Output ONLY valid JSON with these fields exactly:
+- ingredientId: integer
+- brand: string
+- description: string
+- unit: string
+- nutritions: object with nutrition values { "value": number, "unit": string }
+- allergens: list of strings
+- userGenerated: boolean
+
+Do NOT include any explanations or extra text before or after.
+
+Example input ingredient:
+{
+  "id": 101,
+  "name": "Cheddar Cheese",
+  "category": "Dairy"
+}
+
+Example input product JSON:
+{
+  "ingredientId": 101,
+  "brand": "unbranded",
+  "description": "",
+  "unit": "g",
+  "nutritions": {
+    "energy": {"value": 402, "unit": "kcal"},
+    "protein": {"value": 25, "unit": "g"},
+    "fat": {"value": 33, "unit": "g"},
+    "saturated_fat": {"value": 21, "unit": "g"},
+    "carbohydrates": {"value": 1.3, "unit": "g"},
+    "sugar": {"value": 0.5, "unit": "g"},
+    "salt": {"value": 1.8, "unit": "g"},
+    "calcium": {"value": 721, "unit": "mg"}
+  },
+  "allergens": ["lactose"],
+  "userGenerated": false
+}
+
+Output the validated/corrected product JSON ONLY.
+Original ingredient:
+{
+  "id": 7,
+  "name": "Corn Oil",
+  "category": "Oils & Fats"
+}
+Product JSON to validate:
+{
+  "ingredientId": 7,
+  "brand": "unbranded",
+  "description": "",
+  "unit": "ml",
+  "nutritions": {
+    "energy": {
+      "value": 8840.0,
+      "unit": "kcal"
+    },
+    "fat": {
+      "value": 100.0,
+      "unit": "g"
+    },
+    "saturated_fat": {
+      "value": 14.5,
+      "unit": "g"
+    },
+    "carbohydrates": {
+      "value": 0.0,
+      "unit": "g"
+    },
+    "sugar": {
+      "value": 0.0,
+      "unit": "g"
+    },
+    "salt": {
+      "value": 0.1,
+      "unit": "g"
+    }
+  },
+  "allergens": [
+    "soy"
+  ],
+  "userGenerated": false
+}
+Output ONLY the corrected or validated Product JSON with no explanation or extra text.
+==================================================
+2025-08-05 11:16:42,078 - database.mongo_client - INFO - MongoDB connection closed
+2025-08-05 11:16:42,078 - __main__ - INFO - Processing interrupted by user

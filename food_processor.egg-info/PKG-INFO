@@ -1,0 +1,14 @@
+Metadata-Version: 2.4
+Name: food-processor
+Version: 1.0.0
+Summary: Transform PostgreSQL ingredients into detailed MongoDB products using local LLMs
+Requires-Python: >=3.8
+Requires-Dist: psycopg2-binary==2.9.7
+Requires-Dist: pymongo==4.5.0
+Requires-Dist: ollama==0.2.1
+Requires-Dist: requests==2.31.0
+Requires-Dist: python-dotenv==1.0.0
+Requires-Dist: pydantic==2.4.2
+Dynamic: requires-dist
+Dynamic: requires-python
+Dynamic: summary
