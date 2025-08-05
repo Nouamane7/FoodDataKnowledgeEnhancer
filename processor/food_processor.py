@@ -25,7 +25,7 @@ def process_ingredient(ingredient: Ingredient, llm_client: OllamaClient) -> Opti
                 break
             product_data = validated_data
 
-        return Product(**product_data)
+        return validated_data
     except Exception as e:
         logger.error(f"Error processing ingredient {ingredient.id}: {e}")
         return None
