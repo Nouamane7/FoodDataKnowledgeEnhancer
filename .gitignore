@@ -1,0 +1,36 @@
+# Python cache and bytecode
+__pycache__/
+*.py[cod]
+
+# Virtual environment folders
+venv/
+.env
+.env.local
+.env.*.local
+
+# Logs
+*.log
+
+# Editor folders/files
+.vscode/
+.idea/
+
+# egg-info (build metadata)
+*.egg-info/
+
+# Database files (if any local DB files)
+*.sqlite3
+*.db
+
+# Compiled files
+*.so
+*.dylib
+*.dll
+
+# Distribution/build folders
+build/
+dist/
+*.egg
+
+# Mac/Linux system files
+.DS_Store
